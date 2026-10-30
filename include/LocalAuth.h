@@ -89,7 +89,14 @@ inline void secureErase(void* data, std::size_t size) noexcept {
 #if defined(_WIN32)
     SecureZeroMemory(data, size);
 #elif defined(__APPLE__)
-    (void)memset_s(data, size, 0, size);
+    // memset_s requires an opt-in before any inclusion of the system string
+    // header, which a header-only library cannot guarantee. Volatile stores
+    // keep the erase from being optimized away.
+    auto* bytes = static_cast<volatile unsigned char*>(data);
+    while (size != 0) {
+        *bytes++ = 0;
+        --size;
+    }
 #else
     explicit_bzero(data, size);
 #endif

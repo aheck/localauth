@@ -57,6 +57,18 @@ struct TemporaryDirectory {
 void cryptoTests() {
     using namespace LocalAuth;
     {
+        std::array<unsigned char, 34> bytes;
+        bytes.fill(0xa5);
+        Detail::secureErase(bytes.data() + 1, 32);
+        check(bytes.front() == 0xa5 && bytes.back() == 0xa5,
+              "Secure erase wrote outside the requested range");
+        check(std::all_of(bytes.begin() + 1, bytes.end() - 1,
+                          [](unsigned char byte) { return byte == 0; }),
+              "Secure erase did not clear the requested range");
+        Detail::secureErase(bytes.data(), 0);
+        check(bytes.front() == 0xa5, "Zero-length secure erase changed data");
+    }
+    {
         const std::string input(55, 'a');
         check(Detail::hex(Detail::sha256({reinterpret_cast<const std::uint8_t*>(input.data()), input.size()})) ==
               "9f4390f8d30c2dd92ec9f095b65e2b9ae9b0a925a5258e241c9f1e910f734318", "SHA-256 boundary vector failed");
